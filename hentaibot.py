@@ -2,7 +2,7 @@ import json
 import os
 import requests
 import random
-import nekos_fun
+from hentai_func import Hentai, NekosFunTags
 import discord
 from discord import app_commands
 from typing import Optional, Literal
@@ -43,8 +43,6 @@ async def help(ctx: discord.Interaction):
     ret += "Get image from Yandere.\n"
     ret += "konachan [tags]\n"
     ret += "Get image from Konachan.\n"
-    ret += "danbooru [tags]\n"
-    ret += "Get image from danbooru.\n"
     ret += "nekolewd\n"
     ret += "Get lewded nekos from NekoLove.\n"
     ret += "nekosfun\n"
@@ -209,28 +207,11 @@ async def nekolewd(ctx: discord.Interaction):
 @app_commands.describe(tag="Which tag?")
 async def nekosfun(
     ctx: discord.Interaction,
-    tag: Optional[
-        Literal[
-            "ass", "bj", "boobs", "cum", "hentai", "spank", "gasm", "lesbian", "pussy"
-        ]
-    ],
+    tag: Optional[NekosFunTags],
 ):
-    if tag == None:
-        tags = [
-            "ass",
-            "bj",
-            "boobs",
-            "cum",
-            "hentai",
-            "spank",
-            "gasm",
-            "lesbian",
-            "pussy",
-        ]
-        image = nekos_fun.nekofun(random.choice(tags))
-
-    else:
-        image = nekos_fun.nekofun(tag)
+    await ctx.response.defer()
+    tag=tag if tag else random.choice(list(NekosFunTags))
+    image = Hentai.nekofun(tag.value)
 
     if image != 200:
         await ctx.followup.send(image)
