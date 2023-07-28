@@ -6,12 +6,11 @@ from requests import get
 
 
 class NsfwApis(Enum):
-    Rule43Api = "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=500&tags=score:>10+rating:explicit+"
-    KonachanApi = "https://konachan.com/post.json?s=post&q=index&limit=100&tags=score:>10+rating:explicit+"
-    YandereApi = "https://yande.re/post.json?limit=100&tags=score:>10+rating:explicit+"
-    GelbooruApi = "https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=100&tags=score:>10+rating:explicit+"
+    Rule34Api = "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=1000&tags=rating:explicit+"
+    KonachanApi = "https://konachan.com/post.json?s=post&q=index&limit=100&tags=rating:explicit+"
+    YandereApi = "https://yande.re/post.json?limit=100&tags=rating:explicit+"
+    GelbooruApi = "https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=100&tags=rating:explicit+"
     DanbooruApi = "https://danbooru.donmai.us/posts.json?limit=100&tags=rating:explicit+"
-    RandomApi = [Rule43Api, KonachanApi, YandereApi, GelbooruApi, DanbooruApi]
 
 
 class NekosFunTags(Enum):
@@ -39,9 +38,6 @@ class Hentai:
             return ""
 
     async def get_nsfw_image(self, provider: NsfwApis, tags: Optional[str] = None):
-        if provider == NsfwApis.RandomApi:
-            provider = choice(NsfwApis.RandomApi)
-
         tags = tags.lower() if tags else None
 
         url = provider.value + self.format_tags(tags)
@@ -104,3 +100,13 @@ class Hentai:
             return False
         else:
             return str(r.json()["image"])
+
+    @staticmethod
+    def boobchi():
+        r = get("https://bocchi-api.vercel.app/JSON")
+        if r.status_code != 200:
+            return False
+        else:
+            image=str(r.json()["imgURL"])
+            source=str(r.json()["sauceURL"])
+            return image, source
