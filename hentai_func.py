@@ -1,23 +1,26 @@
 from enum import Enum
 from random import choice, shuffle
 from typing import Optional
-from aiohttp import ClientSession
+import aiohttp
 from requests import get
 
 
 class NsfwApis(Enum):
-    Rule43Api="https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=500&tags=score:>10+rating:explicit+"
+    Rule43Api = "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=500&tags=score:>10+rating:explicit+"
     KonachanApi = "https://konachan.com/post.json?s=post&q=index&limit=100&tags=score:>10+rating:explicit+"
     YandereApi = "https://yande.re/post.json?limit=100&tags=score:>10+rating:explicit+"
     GelbooruApi = "https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&limit=100&tags=score:>10+rating:explicit+"
-    RandomApi = [Rule43Api, KonachanApi, YandereApi, GelbooruApi]
+    DanbooruApi = "https://danbooru.donmai.us/posts.json?limit=100&tags=rating:explicit+"
+    RandomApi = [Rule43Api, KonachanApi, YandereApi, GelbooruApi, DanbooruApi]
+
 
 class NekosFunTags(Enum):
-    anal="anal"
-    blowjob="bj"
-    cum="cum"
-    hentai="hentai"
-    yuri="lesbian"
+    anal = "anal"
+    blowjob = "bj"
+    cum = "cum"
+    hentai = "hentai"
+    yuri = "lesbian"
+
 
 class Hentai:
     def __init__(self):
@@ -43,14 +46,14 @@ class Hentai:
 
         url = provider.value + self.format_tags(tags)
 
-        async with ClientSession() as session:
+        async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 nsfw_images = await resp.json()
 
         if not nsfw_images:
             return None
 
-        if provider.value == provider.GelbooruApi.value:
+        if provider.value == NsfwApis.GelbooruApi.value:
             nsfw_images_list = list(nsfw_images.get("post", []))
         else:
             nsfw_images_list = list(nsfw_images)
@@ -72,7 +75,10 @@ class Hentai:
         filtered_ret = [
             img
             for img in nsfw_images_list
-            if all(tag in img["tags"] for tag in tags_list)
+            if all(
+                tag in img["tag_string"] if provider is NsfwApis.DanbooruApi else tag in img["tags"]
+                for tag in tags_list
+            )
         ]
 
         if len(filtered_ret) == 0:
@@ -80,17 +86,21 @@ class Hentai:
 
         filtered_images = []
         for image in filtered_ret:
-            tags = image["tags"].lower().split(" ")
+            tags = (
+                image["tag_string"].lower().split(" ")
+                if provider is NsfwApis.DanbooruApi
+                else image["tags"].lower().split(" ")
+            )
             if any(tag in self.blacklisted_tags for tag in tags):
                 continue
             filtered_images.append(image)
         return choice(filtered_images)
 
+
     @staticmethod
-    def nekofun(endpoint:str):
+    def nekofun(endpoint: str):
         r = get("http://api.nekos.fun:8080/api/" + endpoint)
         if r.status_code != 200:
-            return "An error has occurred"
+            return False
         else:
-            return str(r.json()["url"])
-
+            return str(r.json()["image"])
